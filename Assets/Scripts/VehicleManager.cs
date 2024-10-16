@@ -12,25 +12,51 @@ public class VehicleManager : MonoBehaviour
     public CameraController cameraController; // Reference to CameraController script
 
     private GameObject[] vehicles;  // Store spawned vehicles
+    private const int MaxVehicles = 10;  // Limit to 10 vehicles
 
     void Start()
     {
         // Add listener to spawn button
         spawnButton.onClick.AddListener(SpawnVehicles);
+
+        // Add listener for input validation (for non-numeric input)
+        vehicleInputField.onValueChanged.AddListener(ValidateInput);
+    }
+
+    // Validates input to ensure only integers are entered
+    private void ValidateInput(string input)
+    {
+        if (!int.TryParse(input, out _))
+        {
+            vehicleInputField.text = "";  // Clear the input field if invalid input
+            vehicleInputField.placeholder.GetComponent<TextMeshProUGUI>().text = "Enter a valid number!";
+        }
     }
 
     void SpawnVehicles()
     {
-        // Parse the input field and handle non-numeric input gracefully
-        int vehicleCount = int.TryParse(vehicleInputField.text, out int count) ? count : 1;
+        // Parse the input field and ensure only valid input proceeds
+        if (!int.TryParse(vehicleInputField.text, out int vehicleCount))
+        {
+            vehicleInputField.text = "Enter a valid integer!";
+            return;
+        }
 
+        // Check if the vehicle count exceeds the maximum limit
+        if (vehicleCount > MaxVehicles)
+        {
+            vehicleInputField.text = MaxVehicles.ToString();
+            return;
+        }
+
+        // Initialize the arrays
         vehicles = new GameObject[vehicleCount];
         Camera[] followCameras = new Camera[vehicleCount];
 
         // Spawn vehicles and assign follow cameras
         for (int i = 0; i < vehicleCount; i++)
         {
-            Vector3 spawnPos = spawnArea.position + new Vector3(i * 5, 0, 0); // Spread out vehicles
+            Vector3 spawnPos = spawnArea.position + new Vector3(i * 5, 0, 0);  // Spread out vehicles
             vehicles[i] = Instantiate(vehiclePrefab, spawnPos, Quaternion.identity);
 
             // Create a follow camera for each vehicle
@@ -47,3 +73,4 @@ public class VehicleManager : MonoBehaviour
         cameraController.InitializeCameras(followCameras);
     }
 }
+

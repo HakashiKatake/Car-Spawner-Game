@@ -1,69 +1,83 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 public class CameraController : MonoBehaviour
 {
-    public Camera topViewCamera;             // Overview camera
-    public Canvas cameraSelectionUI;         // UI Canvas to hold dynamic buttons
+    public Camera topViewCamera;            // Overview camera
+    public Canvas cameraSelectionUI;        // Canvas for buttons
+    public GameObject buttonPrefab;         // Button prefab (with TMP support)
 
-    private Camera[] followCameras;  // Array to store follow cameras
+    private Camera[] followCameras;         // Store follow cameras
 
-    // Initialize the cameras and generate the camera selection buttons
+    // Initialize cameras and set up UI buttons
     public void InitializeCameras(Camera[] cameras)
     {
         followCameras = cameras;
-
-        // Generate buttons dynamically
-        GenerateCameraButtons();
-        ActivateCamera(topViewCamera); // Default to overview camera
+        GenerateCameraButtons();  // Create buttons for each camera
+        ActivateCamera(topViewCamera);  // Default to top view camera
     }
 
-    // Generate buttons for each camera option
+    // Generate buttons dynamically for each camera and top view
     private void GenerateCameraButtons()
     {
-        // Clear existing buttons
-        foreach (Transform child in cameraSelectionUI.transform)
+        // Clear any existing buttons
+        Transform buttonContainer = cameraSelectionUI.transform.Find("ButtonContainer");
+        foreach (Transform child in buttonContainer)
+        {
             Destroy(child.gameObject);
+        }
 
-        // Button for overview camera
-        CreateButton("Overview", () => ActivateCamera(topViewCamera));
+        // Create a button for the top view camera
+        CreateButton("Top View", () => ActivateCamera(topViewCamera), buttonContainer);
 
-        // Buttons for follow cameras
+        // Create buttons for each follow camera
         for (int i = 0; i < followCameras.Length; i++)
         {
-            int index = i;  // Store index to use inside lambda function
-            CreateButton($"Vehicle {index + 1}", () => ActivateCamera(followCameras[index]));
+            int index = i;  // Capture index for lambda function
+            CreateButton($"Vehicle {index + 1}", () => ActivateCamera(followCameras[index]), buttonContainer);
         }
     }
 
     // Helper function to create a button dynamically
-    private void CreateButton(string text, UnityEngine.Events.UnityAction onClick)
+    private void CreateButton(string label, UnityEngine.Events.UnityAction onClick, Transform parent)
     {
-        GameObject buttonObj = new GameObject(text);
-        buttonObj.AddComponent<RectTransform>();  // Ensure it has a RectTransform
+        // Instantiate the button from the prefab
+        GameObject buttonObj = Instantiate(buttonPrefab, parent);
 
-        Button button = buttonObj.AddComponent<Button>();
-        Text buttonText = buttonObj.AddComponent<Text>();
-        buttonText.text = text;
-        buttonText.alignment = TextAnchor.MiddleCenter;
+        // Set up the Button and TMP_Text components
+        Button button = buttonObj.GetComponent<Button>();
+        TMP_Text buttonText = buttonObj.GetComponentInChildren<TMP_Text>();
 
-        // Set button's visual and interaction properties
-        button.transform.SetParent(cameraSelectionUI.transform, false);
-        button.onClick.AddListener(onClick);
+        if (button != null && buttonText != null)
+        {
+            buttonText.text = label;  // Set button text
+            button.onClick.AddListener(onClick);  // Assign click event
+        }
+        else
+        {
+            Debug.LogError("Button prefab is missing Button or TMP_Text component.");
+        }
     }
 
-    // Activate the selected camera and disable all others
+    // Activate the selected camera and disable others
     private void ActivateCamera(Camera activeCamera)
     {
         // Disable all follow cameras
         foreach (Camera cam in followCameras)
+        {
             cam.enabled = false;
+        }
 
-        // Disable overview camera
+        // Disable the top view camera
         topViewCamera.enabled = false;
 
         // Enable the selected camera
         activeCamera.enabled = true;
     }
 }
+
+
+
+
 
